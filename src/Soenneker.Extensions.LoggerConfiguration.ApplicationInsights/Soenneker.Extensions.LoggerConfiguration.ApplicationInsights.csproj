@@ -44,6 +44,6 @@
     <ItemGroup>
         <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
         <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0" />
-        <PackageReference Include="Soenneker.Extensions.Configuration.Logging" Version="4.0.134" />
+        <PackageReference Include="Soenneker.Extensions.Configuration.Logging" Version="4.0.135" />
     </ItemGroup>
 </Project>
