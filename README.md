@@ -4,7 +4,7 @@
 [![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.extensions.loggerconfiguration.applicationinsights/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/soenneker/soenneker.extensions.loggerconfiguration.applicationinsights/actions/workflows/codeql.yml)
 
 # ![](https://user-images.githubusercontent.com/4441470/224455560-91ed3ee7-f510-4041-a8d2-3fc093025112.png) Soenneker.Extensions.LoggerConfiguration.ApplicationInsights
-Serilog LoggerConfiguration extension methods related to Application Insights.
+Conditionally adds an asynchronous Serilog Application Insights trace sink from application configuration.
 
 ## Installation
 
@@ -12,15 +12,14 @@ Serilog LoggerConfiguration extension methods related to Application Insights.
 dotnet add package Soenneker.Extensions.LoggerConfiguration.ApplicationInsights
 ```
 
-## Quick start
+## Usage
 
 ```csharp
 using Soenneker.Extensions.LoggerConfiguration.ApplicationInsights;
 
-// Given an existing Serilog.LoggerConfiguration named loggerConfiguration:
-loggerConfiguration.AddApplicationInsightsLogging(services, config);
+loggerConfiguration.AddApplicationInsightsLogging(serviceProvider, configuration);
 ```
 
-## Common operations
+The sink is added only when `Azure:AppInsights:Enable` is `true`. It resolves `TelemetryConfiguration` from the supplied service provider, uses `TelemetryConverter.Traces`, and wraps the sink with Serilog's async sink.
 
-- `AddApplicationInsightsLogging()` - Adds the Application Insights sink (asynchronously) unless the config says that we shouldn't.
+The minimum level comes from the shared logging configuration extension (`GetLogEventLevel()`). When disabled, the method makes no change. When enabled, `TelemetryConfiguration` must already be registered or service resolution throws.
