@@ -17,9 +17,40 @@ dotnet add package Soenneker.Extensions.LoggerConfiguration.ApplicationInsights
 ```csharp
 using Soenneker.Extensions.LoggerConfiguration.ApplicationInsights;
 
-loggerConfiguration.AddApplicationInsightsLogging(serviceProvider, configuration);
+builder.Services.AddApplicationInsightsTelemetry();
+
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+{
+    loggerConfiguration.AddApplicationInsightsLogging(services, context.Configuration);
+});
 ```
 
-The sink is added only when `Azure:AppInsights:Enable` is `true`. It resolves `TelemetryConfiguration` from the supplied service provider, uses `TelemetryConverter.Traces`, and wraps the sink with Serilog's async sink.
+Enable the sink through application configuration:
 
-The minimum level comes from the shared logging configuration extension (`GetLogEventLevel()`). When disabled, the method makes no change. When enabled, `TelemetryConfiguration` must already be registered or service resolution throws.
+```json
+{
+  "Azure": {
+    "AppInsights": {
+      "Enable": true
+    }
+  },
+  "Log": {
+    "Levels": {
+      "Default": "Information"
+    }
+  }
+}
+```
+
+When `Azure:AppInsights:Enable` is absent or `false`, the method returns without resolving services or changing the logger configuration. When enabled, it:
+
+- Resolves `TelemetryConfiguration` from the supplied service provider.
+- Adds an Application Insights sink using `TelemetryConverter.Traces`.
+- Sets the sink's minimum level from `Log:Levels:Default`, then the legacy `Log:DefaultLogLevel`, then `Information`.
+- Wraps telemetry writes in Serilog's asynchronous sink.
+
+This extension does not call `AddApplicationInsightsTelemetry()`, configure an Application Insights connection string, or create `Log.Logger`. Register and configure Application Insights before the Serilog callback, then create/host the logger through the application's normal Serilog setup. Missing `TelemetryConfiguration` causes service resolution to throw when the feature is enabled.
+
+The minimum level is read when the sink is added; changing configuration later does not update this sink automatically. Call the method once per `LoggerConfiguration`, because each call adds another sink and can duplicate telemetry.
+
+Serilog's default async wrapper does not block producers when its buffer is full, so events can be dropped under sustained pressure. Application Insights telemetry can also leave the process; do not include credentials, tokens, or personal data in log properties unless collection and retention are explicitly approved.
